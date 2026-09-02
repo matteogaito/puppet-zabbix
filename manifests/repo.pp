@@ -24,6 +24,11 @@ class zabbix::repo (
   String[1]                 $zabbix_version                    = $zabbix::params::zabbix_version,
 ) inherits zabbix::params {
   if $manage_repo {
+    $repo_version = versioncmp($zabbix_version, '7.0') > 0 ? {
+      true    => "${zabbix_version}/stable",
+      default => $zabbix_version,
+    }
+
     case $facts['os']['family'] {
       'RedHat': {
         $majorrelease = $facts['os']['release']['major']
@@ -64,7 +69,7 @@ class zabbix::repo (
         }
 
         $_repo_location = $repo_location ? {
-          undef   => "https://repo.zabbix.com/zabbix/${zabbix_version}/rhel/${majorrelease}/\$basearch/",
+          undef   => "https://repo.zabbix.com/zabbix/${repo_version}/rhel/${majorrelease}/\$basearch/",
           default => $repo_location,
         }
 
@@ -114,26 +119,13 @@ class zabbix::repo (
         }
 
         $_repo_location = $repo_location ? {
-          undef   => "http://repo.zabbix.com/zabbix/${zabbix_version}/${operatingsystem}/",
+          undef   => "http://repo.zabbix.com/zabbix/${repo_version}/${operatingsystem}/",
           default => $repo_location,
         }
 
         $_gpgkey_zabbix = $repo_gpg_key_location ? {
           undef   => 'https://repo.zabbix.com/zabbix-official-repo.key',
           default => "${repo_gpg_key_location}/zabbix-official-repo.key",
-        }
-
-        apt::key { 'zabbix-FBABD5F':
-          id     => 'FBABD5FB20255ECAB22EE194D13D58E479EA5ED4',
-          source => $_gpgkey_zabbix,
-        }
-        apt::key { 'zabbix-A1848F5':
-          id     => 'A1848F5352D022B9471D83D0082AB56BA14FE591',
-          source => $_gpgkey_zabbix,
-        }
-        apt::key { 'zabbix-4C3D6F2':
-          id     => '4C3D6F2CC75F5146754FC374D913219AB5333005',
-          source => $_gpgkey_zabbix,
         }
 
         # Debian 11 provides Zabbix 5.0 by default. This can cause problems for 4.0 versions
@@ -146,11 +138,10 @@ class zabbix::repo (
           repos    => 'main',
           release  => $releasename,
           pin      => $pinpriority,
-          require  => [
-            Apt_key['zabbix-FBABD5F'],
-            Apt_key['zabbix-A1848F5'],
-            Apt_key['zabbix-4C3D6F2'],
-          ],
+          key      => {
+            'name'   => 'zabbix-official-repo.asc',
+            'source' => $_gpgkey_zabbix,
+          },
         }
 
         Apt::Source['zabbix'] -> Package<|tag == 'zabbix'|>

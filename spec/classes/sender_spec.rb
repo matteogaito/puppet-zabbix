@@ -45,9 +45,7 @@ describe 'zabbix::sender' do
           it { is_expected.to contain_yumrepo('zabbix-nonsupported') }
           it { is_expected.to contain_yumrepo('zabbix') }
         when 'Debian'
-          it { is_expected.to contain_apt__source('zabbix') }
-          it { is_expected.to contain_apt__key('zabbix-A1848F5') }
-          it { is_expected.to contain_apt__key('zabbix-FBABD5F') }
+          it { is_expected.to contain_apt__source('zabbix').with_key('name' => 'zabbix-official-repo.asc', 'source' => 'https://repo.zabbix.com/zabbix-official-repo.key') }
         end
       end
     end

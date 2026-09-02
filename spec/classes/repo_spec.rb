@@ -20,8 +20,35 @@ describe 'zabbix::repo' do
         it { is_expected.to contain_class('zabbix::params') }
         it { is_expected.to contain_class('zabbix::repo') }
 
-        it { is_expected.to contain_apt__key('zabbix-A1848F5') } if facts[:os]['family'] == 'Debian'
-        it { is_expected.to contain_apt__key('zabbix-FBABD5F') } if facts[:os]['family'] == 'Debian'
+        it { is_expected.to contain_apt__source('zabbix').with_key('name' => 'zabbix-official-repo.asc', 'source' => 'https://repo.zabbix.com/zabbix-official-repo.key') }
+        it { is_expected.not_to contain_apt__key('zabbix-FBABD5F') }
+        it { is_expected.not_to contain_apt__key('zabbix-A1848F5') }
+        it { is_expected.not_to contain_apt__key('zabbix-4C3D6F2') }
+
+        context 'with Zabbix 7.0' do
+          let(:params) { { zabbix_version: '7.0' } }
+
+          it { is_expected.to contain_apt__source('zabbix').with_location("http://repo.zabbix.com/zabbix/7.0/#{facts[:os]['name'].downcase}/") }
+        end
+
+        context 'with Zabbix newer than 7.0' do
+          let(:params) { { zabbix_version: '7.2' } }
+
+          it { is_expected.to contain_apt__source('zabbix').with_location("http://repo.zabbix.com/zabbix/7.2/stable/#{facts[:os]['name'].downcase}/") }
+        end
+
+        if facts[:os]['name'] == 'Debian'
+          context 'on Debian 13 with Zabbix 7.4' do
+            let :facts do
+              facts.deep_merge(os: { release: { full: '13', major: '13' }, distro: { codename: 'trixie' } })
+            end
+
+            let(:params) { { zabbix_version: '7.4' } }
+
+            it { is_expected.to compile.with_all_deps }
+            it { is_expected.to contain_apt__source('zabbix').with_location('http://repo.zabbix.com/zabbix/7.4/stable/debian/').with_release('trixie') }
+          end
+        end
 
         context 'when repo_location is "https://example.com/foo"' do
           let :params do
@@ -126,6 +153,17 @@ describe 'zabbix::repo' do
 
           it { is_expected.to contain_yumrepo('zabbix-nonsupported').with_gpgkey('https://repo.zabbix.com/RPM-GPG-KEY-ZABBIX-B5333005') } if facts[:os]['release']['major'].to_i < 9
           it { is_expected.to contain_yumrepo('zabbix-nonsupported').with_gpgkey('https://repo.zabbix.com/RPM-GPG-KEY-ZABBIX-08EFA7DD') } if facts[:os]['release']['major'].to_i >= 9
+        end
+
+        context "on RedHat #{major} and Zabbix 7.2" do
+          let :params do
+            {
+              zabbix_version: '7.2',
+              manage_repo: true
+            }
+          end
+
+          it { is_expected.to contain_yumrepo('zabbix').with_baseurl("https://repo.zabbix.com/zabbix/7.2/stable/rhel/#{major}/$basearch/") }
         end
       end
     end
