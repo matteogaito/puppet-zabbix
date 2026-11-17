@@ -4,7 +4,8 @@
 # @param zabbix_version This is the zabbix version.
 # @param repo_location A custom repo location (e.g. your own mirror)
 # @param repo_gpg_key_location 
-#   A custom repo GPG key location (e.g. an airlocked copy of the gpg key)
+#   A custom repo GPG key location (e.g. an airlocked copy of the gpg key). On apt also a
+#   puppet:/// location, served by the Puppet server to nodes without internet access.
 # @param frontend_repo_location A custom repo location for frontend package.
 # @param unsupported_repo_location
 #   A custom repo location for unsupported content (e.g. your own mirror)
@@ -17,7 +18,7 @@ class zabbix::repo (
   Boolean                   $manage_repo                       = $zabbix::params::manage_repo,
   Boolean                   $manage_apt                        = $zabbix::params::manage_apt,
   Optional[Stdlib::HTTPUrl] $repo_location                     = $zabbix::params::repo_location,
-  Optional[Stdlib::HTTPUrl] $repo_gpg_key_location             = $zabbix::params::repo_gpg_key_location,
+  Optional[Variant[Stdlib::HTTPUrl, Stdlib::Filesource]] $repo_gpg_key_location = $zabbix::params::repo_gpg_key_location,
   Optional[Stdlib::HTTPUrl] $frontend_repo_location            = $zabbix::params::frontend_repo_location,
   Optional[Stdlib::HTTPUrl] $unsupported_repo_location         = $zabbix::params::unsupported_repo_location,
   Optional[Stdlib::HTTPUrl] $unsupported_repo_gpg_key_location = $zabbix::params::unsupported_repo_gpg_key_location,
